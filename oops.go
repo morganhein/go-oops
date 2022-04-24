@@ -24,6 +24,13 @@ func Wrap(e error) error {
 	}
 }
 
+func WithMessage(msg string) error {
+	return &tracedError{
+		original: errors.New(msg),
+		trace:    addTrace(0),
+	}
+}
+
 // GetTrace finds the earliest/first error that contains a stack trace
 func GetTrace(e error) Oops {
 	//iterate through each value and find any that have traces

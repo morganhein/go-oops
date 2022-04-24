@@ -39,7 +39,7 @@ func JSONFormat(e *tracedError) (string, error) {
 		OriginalError string
 		Frames        []cleansedTraces
 	}
-	cleansed := removeAboveCaller(e.trace)
+	cleansed := removeAboveEntrypoint(e.trace)
 	a := alias{
 		Frames: cleansed,
 	}
@@ -64,7 +64,7 @@ func TabFormat(e *tracedError) (string, error) {
 			return "", err
 		}
 	}
-	traces := removeAboveCaller(e.trace)
+	traces := removeAboveEntrypoint(e.trace)
 	writer := tabwriter.NewWriter(&buf, 6, 4, 3, '\t', tabwriter.AlignRight)
 	for i := 0; i < len(traces); i++ {
 		if traces[i].msg != "" {
@@ -93,7 +93,7 @@ type cleansedTraces struct {
 	File string
 }
 
-func removeAboveCaller(t Trace) []cleansedTraces {
+func removeAboveEntrypoint(t Trace) []cleansedTraces {
 	var result []cleansedTraces
 	for i := 0; i < len(t); i++ {
 		fun := t[i].Func
@@ -105,7 +105,7 @@ func removeAboveCaller(t Trace) []cleansedTraces {
 		//detect if we're in a test file before adding
 		if strings.Contains(t[i].File, "src/testing/testing.go") {
 			result = append(result, cleansedTraces{
-				msg: fmt.Sprintf("%v results above caller ignored.", len(t)-i),
+				msg: fmt.Sprintf("%v result(s) above entrypoint ignored.", len(t)-i-1),
 			})
 			//skip the rest
 			i = len(t)
@@ -114,7 +114,7 @@ func removeAboveCaller(t Trace) []cleansedTraces {
 		//detect if we're at main, we won't need to print past that
 		if strings.Contains(funcName, "main.main") {
 			result = append(result, cleansedTraces{
-				msg: fmt.Sprintf("%v results above caller ignored.", len(t)-i),
+				msg: fmt.Sprintf("%v result(s) above entrypoint ignored.", len(t)-i-1),
 			})
 			//skip the rest
 			i = len(t)
