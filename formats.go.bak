@@ -1,0 +1,92 @@
+package oops
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"text/tabwriter"
+)
+
+func JSONFormat(tErr *trace) (string, error) {
+	type alias struct {
+		OriginalError string
+		Messages      []string
+		Frames        []Frame
+	}
+	a := alias{
+		Frames: tErr.stack,
+	}
+	if tErr.originalError != nil {
+		a.OriginalError = tErr.originalError.Error()
+	}
+	b, err := json.Marshal(a)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+//TabFormat returns a tabular error format
+func TabFormat(tErr *trace) (string, error) {
+	var buf bytes.Buffer
+	newline := "\n"
+	if tErr.errType != "" {
+		_, err := fmt.Fprintf(&buf, "type: %v%v", tErr.errType, newline)
+		if err != nil {
+			return "", err
+		}
+	}
+	//LIFO
+	if tErr.originalError != nil {
+		_, err := fmt.Fprintf(&buf, "originalErr: %v%v", tErr.originalError, newline)
+		if err != nil {
+			return "", err
+		}
+	}
+	writer := tabwriter.NewWriter(&buf, 6, 4, 3, '\t', tabwriter.AlignRight)
+	for i := 0; i < len(tErr.stack); i++ {
+		fun := tErr.stack[i].Func
+		funcName := "?"
+		if fun != nil {
+			parts := strings.Split(fun.Name(), "/")
+			funcName = parts[len(parts)-1]
+		}
+		//detect if we're in a test file before adding
+		if strings.Contains(tErr.stack[i].File, "src/testing/testing.go") {
+			i = len(tErr.stack)
+			_, err := fmt.Fprint(writer, "...results truncated\n")
+			if err != nil {
+				return "", err
+			}
+			continue
+		}
+		_, err := fmt.Fprintf(writer, " %v.\t%s()\t%s:%d\t\n", i+1, funcName, tErr.stack[i].File, tErr.stack[i].Line)
+		if err != nil {
+			return "", err
+		}
+		//detect if we're at main, we won't need to print past that
+		if strings.Contains(funcName, "main.main") {
+			_, err := fmt.Fprint(writer, "...results truncated\n")
+			if err != nil {
+				return "", err
+			}
+			i = len(tErr.stack)
+			continue
+		}
+		//detect if we're at our errors interceptor
+		if strings.Contains(tErr.stack[i].File, "go-bootstrapping/interceptors/errors.go") {
+			_, err := fmt.Fprint(writer, "...results truncated\n")
+			if err != nil {
+				return "", err
+			}
+			i = len(tErr.stack)
+			continue
+		}
+	}
+	err := writer.Flush()
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
