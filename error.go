@@ -29,7 +29,7 @@ func addTrace(frames int) []Frame {
 	pc := make([]uintptr, 15)
 	n := runtime.Callers(3+frames, pc)
 	capturedFrames := runtime.CallersFrames(pc[:n])
-	trace := []Frame{}
+	var trace []Frame
 	keepGoing := true
 	var s runtime.Frame
 	for keepGoing {
