@@ -1,3 +1,3 @@
-module oops
+module github.com/morganhein/go-oops
 
 go 1.18
