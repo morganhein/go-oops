@@ -2,6 +2,7 @@ package oops
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -33,6 +34,10 @@ func TestErrorsAs(t *testing.T) {
 }
 
 func TestTrace(t *testing.T) {
-	//e := New("this is a new error")
-
+	err := New("this is a new error")
+	newErr := fmt.Errorf("here's a new error: %w", err)
+	eTrace := GetTrace(newErr)
+	if eTrace == nil {
+		t.Fail()
+	}
 }

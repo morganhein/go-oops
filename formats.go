@@ -8,17 +8,16 @@ import (
 	"text/tabwriter"
 )
 
-func JSONFormat(tErr *trace) (string, error) {
+func JSONFormat(e *tracedError) (string, error) {
 	type alias struct {
 		OriginalError string
-		Messages      []string
 		Frames        []Frame
 	}
 	a := alias{
-		Frames: tErr.stack,
+		Frames: e.trace,
 	}
-	if tErr.originalError != nil {
-		a.OriginalError = tErr.originalError.Error()
+	if e.original != nil {
+		a.OriginalError = e.original.Error()
 	}
 	b, err := json.Marshal(a)
 	if err != nil {
@@ -28,40 +27,34 @@ func JSONFormat(tErr *trace) (string, error) {
 }
 
 //TabFormat returns a tabular error format
-func TabFormat(tErr *trace) (string, error) {
+func TabFormat(e *tracedError) (string, error) {
 	var buf bytes.Buffer
 	newline := "\n"
-	if tErr.errType != "" {
-		_, err := fmt.Fprintf(&buf, "type: %v%v", tErr.errType, newline)
-		if err != nil {
-			return "", err
-		}
-	}
 	//LIFO
-	if tErr.originalError != nil {
-		_, err := fmt.Fprintf(&buf, "originalErr: %v%v", tErr.originalError, newline)
+	if e.original != nil {
+		_, err := fmt.Fprintf(&buf, "originalErr: %v%v", e.original, newline)
 		if err != nil {
 			return "", err
 		}
 	}
 	writer := tabwriter.NewWriter(&buf, 6, 4, 3, '\t', tabwriter.AlignRight)
-	for i := 0; i < len(tErr.stack); i++ {
-		fun := tErr.stack[i].Func
+	for i := 0; i < len(e.trace); i++ {
+		fun := e.trace[i].Func
 		funcName := "?"
 		if fun != nil {
 			parts := strings.Split(fun.Name(), "/")
 			funcName = parts[len(parts)-1]
 		}
 		//detect if we're in a test file before adding
-		if strings.Contains(tErr.stack[i].File, "src/testing/testing.go") {
-			i = len(tErr.stack)
+		if strings.Contains(e.trace[i].File, "src/testing/testing.go") {
+			i = len(e.trace)
 			_, err := fmt.Fprint(writer, "...results truncated\n")
 			if err != nil {
 				return "", err
 			}
 			continue
 		}
-		_, err := fmt.Fprintf(writer, " %v.\t%s()\t%s:%d\t\n", i+1, funcName, tErr.stack[i].File, tErr.stack[i].Line)
+		_, err := fmt.Fprintf(writer, " %v.\t%s()\t%s:%d\t\n", i+1, funcName, e.trace[i].File, e.trace[i].Line)
 		if err != nil {
 			return "", err
 		}
@@ -71,16 +64,7 @@ func TabFormat(tErr *trace) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			i = len(tErr.stack)
-			continue
-		}
-		//detect if we're at our errors interceptor
-		if strings.Contains(tErr.stack[i].File, "go-bootstrapping/interceptors/errors.go") {
-			_, err := fmt.Fprint(writer, "...results truncated\n")
-			if err != nil {
-				return "", err
-			}
-			i = len(tErr.stack)
+			i = len(e.trace)
 			continue
 		}
 	}

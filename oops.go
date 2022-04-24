@@ -24,8 +24,8 @@ func Wrap(e error) error {
 	}
 }
 
-// Stack finds the earliest/first stack trace added to the wrapped errors
-func Stack(e error) Trace {
+// GetTrace finds the earliest/first error that contains a stack trace
+func GetTrace(e error) Oops {
 	//iterate through each value and find any that have traces
 	next := true
 	var foundTraceError *tracedError
@@ -41,10 +41,11 @@ func Stack(e error) Trace {
 			next = false
 			continue
 		}
+		e = unwrapped
 	}
 	//if we found a stack, return it
 	if foundTraceError != nil {
-		return foundTraceError.trace
+		return foundTraceError
 	}
 	//if none found return nil
 	return nil
