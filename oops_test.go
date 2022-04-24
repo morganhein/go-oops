@@ -40,4 +40,5 @@ func TestTrace(t *testing.T) {
 	if eTrace == nil {
 		t.Fail()
 	}
+	fmt.Printf("%s\n", eTrace)
 }

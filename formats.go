@@ -4,9 +4,35 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 	"text/tabwriter"
 )
+
+func (e *tracedError) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		st, err := JSONFormat(e)
+		if err != nil {
+			//TODO (@morgan): maybe better logging here?
+			fmt.Printf("could not convert error into the proper format: %v\n", err)
+		}
+		_, _ = io.WriteString(s, st)
+	case 's':
+		st, err := TabFormat(e)
+		if err != nil {
+			fmt.Printf("could not convert error into the proper format: %v\n", err)
+		}
+		_, _ = io.WriteString(s, st)
+	default:
+		st, err := JSONFormat(e)
+		if err != nil {
+			//TODO (@morgan): maybe better logging here?
+			fmt.Printf("could not convert error into the proper format: %v\n", err)
+		}
+		_, _ = io.WriteString(s, st)
+	}
+}
 
 func JSONFormat(e *tracedError) (string, error) {
 	type alias struct {
@@ -48,7 +74,7 @@ func TabFormat(e *tracedError) (string, error) {
 		//detect if we're in a test file before adding
 		if strings.Contains(e.trace[i].File, "src/testing/testing.go") {
 			i = len(e.trace)
-			_, err := fmt.Fprint(writer, "...results truncated\n")
+			_, err := fmt.Fprint(writer, " ?\tresults above caller truncated\n")
 			if err != nil {
 				return "", err
 			}
@@ -60,7 +86,7 @@ func TabFormat(e *tracedError) (string, error) {
 		}
 		//detect if we're at main, we won't need to print past that
 		if strings.Contains(funcName, "main.main") {
-			_, err := fmt.Fprint(writer, "...results truncated\n")
+			_, err := fmt.Fprint(writer, " ?\tresults above caller truncated\n")
 			if err != nil {
 				return "", err
 			}
@@ -73,4 +99,38 @@ func TabFormat(e *tracedError) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func removeAboveCaller(t Trace) Trace {
+	for i := 0; i < len(t); i++ {
+		fun := t[i].Func
+		funcName := "?"
+		if fun != nil {
+			parts := strings.Split(fun.Name(), "/")
+			funcName = parts[len(parts)-1]
+		}
+		//detect if we're in a test file before adding
+		if strings.Contains(t[i].File, "src/testing/testing.go") {
+			i = len(t)
+			_, err := fmt.Fprint(writer, " ?\tresults above caller truncated\n")
+			if err != nil {
+				return
+			}
+			continue
+		}
+		//detect if we're at main, we won't need to print past that
+		if strings.Contains(funcName, "main.main") {
+			_, err := fmt.Fprint(writer, " ?\tresults above caller truncated\n")
+			if err != nil {
+				return "", err
+			}
+			i = len(e.trace)
+			continue
+		}
+		_, err := fmt.Fprintf(writer, " %v.\t%s()\t%s:%d\t\n", i+1, funcName, t[i].File, t[i].Line)
+		if err != nil {
+			return "", err
+		}
+
+	}
 }
