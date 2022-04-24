@@ -22,9 +22,9 @@ func (f Frame) MarshalJSON() ([]byte, error) {
 	return json.Marshal(x)
 }
 
-type trace []Frame
+type Trace []Frame
 
-func (t *trace) Format(s fmt.State, verb rune) {
+func (t *Trace) Format(s fmt.State, verb rune) {
 	//switch verb {
 	//case 'v':
 	//	st, err := JSONFormat(t)

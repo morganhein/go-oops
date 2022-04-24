@@ -2,52 +2,50 @@ package oops
 
 import (
 	"errors"
-	"fmt"
-	"runtime"
 )
 
 type Oops interface {
-	Trace() *trace
 	error
+	Trace() Trace
 }
 
-func Wrap[T error](e T) *Error[T] {
-	//detect if T is not an error using reflection?
+func New(msg string) error {
+	return &tracedError{
+		original: errors.New(msg),
+		trace:    addTrace(0),
+	}
+}
 
-	return &Error[T]{
-		trace:    getStack(0),
+func Wrap(e error) error {
+	//check if it's already a traced error
+	return &tracedError{
 		original: e,
+		trace:    addTrace(0),
 	}
 }
 
-func getStack(frames int) []Frame {
-	pc := make([]uintptr, 15)
-	n := runtime.Callers(3+frames, pc)
-	capturedFrames := runtime.CallersFrames(pc[:n])
-	trace := []Frame{}
-	keepGoing := true
-	var s runtime.Frame
-	for keepGoing {
-		s, keepGoing = capturedFrames.Next()
-		trace = append(trace, Frame(s))
+// Stack finds the earliest/first stack trace added to the wrapped errors
+func Stack(e error) Trace {
+	//iterate through each value and find any that have traces
+	next := true
+	var foundTraceError *tracedError
+	foundTraceError, _ = e.(*tracedError)
+	for next {
+		unwrapped := errors.Unwrap(e)
+		//find the first one to get added
+		val, ok := e.(*tracedError)
+		if ok {
+			foundTraceError = val
+		}
+		if unwrapped == nil {
+			next = false
+			continue
+		}
 	}
-	return trace
-}
-
-type Error[T error] struct {
-	msg      string
-	original error
-	trace    trace
-}
-
-func (e *Error[T]) Error() string {
-	return fmt.Sprintf("%v", e.original)
-}
-
-func (e *Error[T]) Is(target error) bool {
-	return errors.Is(e.original, target)
-}
-
-func (e *Error[T]) As(target any) bool {
-	return errors.As(e.original, target)
+	//if we found a stack, return it
+	if foundTraceError != nil {
+		return foundTraceError.trace
+	}
+	//if none found return nil
+	return nil
 }

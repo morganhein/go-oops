@@ -31,3 +31,8 @@ func TestErrorsAs(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestTrace(t *testing.T) {
+	//e := New("this is a new error")
+
+}
