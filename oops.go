@@ -2,6 +2,7 @@ package oops
 
 import (
 	"errors"
+	"fmt"
 )
 
 type Oops interface {
@@ -24,9 +25,9 @@ func Wrap(e error) error {
 	}
 }
 
-func WithMessage(msg string) error {
+func WithMessage(msg string, original error) error {
 	return &tracedError{
-		original: errors.New(msg),
+		original: fmt.Errorf("%s: %w", msg, original),
 		trace:    addTrace(0),
 	}
 }
