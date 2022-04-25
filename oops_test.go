@@ -33,6 +33,16 @@ func TestErrorsAs(t *testing.T) {
 	}
 }
 
+func TestWithMessage(t *testing.T) {
+	originalErr := &newError{msg: "original error"}
+	msgError := WithMessage("new message", originalErr)
+	trace := GetTrace(msgError)
+	if trace == nil {
+		t.Fail()
+	}
+	fmt.Printf("%s\n", trace)
+}
+
 func TestTrace(t *testing.T) {
 	err := New("this is a new error")
 	newErr := fmt.Errorf("here's a new error: %w", err)
