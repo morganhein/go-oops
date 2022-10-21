@@ -17,6 +17,19 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, "errors are bad: 2", i.Error())
 }
 
+func TestWrap(t *testing.T) {
+	innerError := errors.New("this is an inner error")
+	err := Wrap[InternalError](innerError, "this is the outer error")
+	assert.NotNil(t, err)
+	t.Logf("\n%s", err)
+}
+
+func TestAsError(t *testing.T) {
+	var err error
+	err = New[InternalError]("errors are bad: %v", 2)
+	assert.NotNil(t, err)
+}
+
 func TestJSonFormat(t *testing.T) {
 	err := New[InternalError]("errors are bad: %v", 2)
 	t.Logf("\n%v", err)
