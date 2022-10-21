@@ -1,3 +1,5 @@
+![Tests](https://github.com/morganhein/go-oops/actions/workflows/tests.yml/badge.svg)
+
 # OOPS
 
 __Oops I did it again!__ Yet another error library
