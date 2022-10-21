@@ -135,14 +135,16 @@ type cleansedTraces struct {
 
 func JSONFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 	type alias struct {
-		OriginalError string `json:"wrapped_error,omitempty"`
-		Msg           string `json:"error"`
-		Frames        []cleansedTraces
-		Meta          map[string]interface{} `json:",omitempty"`
+		OriginalError string                 `json:"Wrapped_error,omitempty"`
+		Msg           string                 `json:"Error"`
+		Type          string                 `json:"Type"`
+		Frames        []cleansedTraces       `json:"Frames"`
+		Meta          map[string]interface{} `json:"Meta,omitempty"`
 	}
 	cleansed := removeAboveEntrypoint(e.stack)
 	a := alias{
 		Frames: cleansed,
+		Type:   e.errType,
 	}
 	if e.msg != "" {
 		a.Msg = e.msg
@@ -172,9 +174,7 @@ func TabFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 	}
 	traces := removeAboveEntrypoint(e.stack)
 	writer := tabwriter.NewWriter(&buf, 6, 4, 3, '\t', tabwriter.AlignRight)
-	if len(e.msg) > 0 {
-		fmt.Fprintf(writer, "\t%v\n", e.msg)
-	}
+	fmt.Fprintf(writer, "%v: \t%v\n", e.errType, e.msg)
 	for i := 0; i < len(traces); i++ {
 		if traces[i].msg != "" {
 			_, err := fmt.Fprintf(writer, " ? \t%v\n", traces[i].msg)

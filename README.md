@@ -67,7 +67,7 @@ type OopsI interface {
 }
 
 type ErrorType interface {
-    Inject(msg string, err error) OopsI
+    Inject(msg, errType string, err error) OopsI
 }
 ```
 
@@ -77,8 +77,8 @@ type CustomError struct {
 	oops.BaseOopsError
 }
 
-func (c CustomError) Inject(msg string, err error) oops.OopsI {
-	c.BaseOopsError = c.BaseOopsError.Inject(msg, err)
+func (c CustomError) Inject(msg, errType string, err error) oops.OopsI {
+	c.BaseOopsError = c.BaseOopsError.Inject(msg, errType, err)
 	return &c
 }
 
