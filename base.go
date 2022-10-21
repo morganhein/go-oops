@@ -82,14 +82,14 @@ func (o *BaseOopsError) Format(s fmt.State, verb rune) {
 	case 'v':
 		st, err := JSONFormat(o, false)
 		if err != nil {
-			//TODO (@morgan): maybe better logging here?
+			// TODO (@morgan): maybe better logging here?
 			fmt.Printf("could not convert error into the proper format: %v\n", err)
 		}
 		_, _ = io.WriteString(s, st)
 	case 'V':
 		st, err := JSONFormat(o, true)
 		if err != nil {
-			//TODO (@morgan): maybe better logging here?
+			// TODO (@morgan): maybe better logging here?
 			fmt.Printf("could not convert error into the proper format: %v\n", err)
 		}
 		_, _ = io.WriteString(s, st)
@@ -108,7 +108,7 @@ func (o *BaseOopsError) Format(s fmt.State, verb rune) {
 	default:
 		st, err := JSONFormat(o, false)
 		if err != nil {
-			//TODO (@morgan): maybe better logging here?
+			// TODO (@morgan): maybe better logging here?
 			fmt.Printf("could not convert error into the proper format: %v\n", err)
 		}
 		_, _ = io.WriteString(s, st)
@@ -116,7 +116,7 @@ func (o *BaseOopsError) Format(s fmt.State, verb rune) {
 }
 
 type cleansedTraces struct {
-	msg  string //if a message exists, then the Func/Line/File will be empty.
+	msg  string // if a message exists, then the Func/Line/File will be empty.
 	Func string
 	Line int
 	File string
@@ -148,7 +148,7 @@ func JSONFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 // TabFormat returns a tabular error format
 func TabFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 	var buf bytes.Buffer
-	//LIFO
+	// LIFO
 	if e.actual != nil {
 		_, err := fmt.Fprintf(&buf, "err: \t%v\n", e.actual)
 		if err != nil {
@@ -157,9 +157,12 @@ func TabFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 	}
 	traces := removeAboveEntrypoint(e.stack)
 	writer := tabwriter.NewWriter(&buf, 6, 4, 3, '\t', tabwriter.AlignRight)
+	if len(e.msg) > 0 {
+		fmt.Fprintf(writer, "\t%v\n", e.msg)
+	}
 	for i := 0; i < len(traces); i++ {
 		if traces[i].msg != "" {
-			_, err := fmt.Fprintf(writer, " ?\t%v", traces[i].msg)
+			_, err := fmt.Fprintf(writer, " ? \t%v\n", traces[i].msg)
 			if err != nil {
 				return "", err
 			}
@@ -170,22 +173,17 @@ func TabFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 			return "", err
 		}
 	}
+	err := writer.Flush()
+	if err != nil {
+		return "", err
+	}
 	if includeMeta && e.meta != nil && len(e.meta) > 0 {
-		_, err := fmt.Fprintf(writer, "Metadata:")
-		if err != nil {
-			return "", err
-		}
-
 		for k, v := range e.meta {
-			_, err = fmt.Fprintf(writer, "\t%s: \t%v\n", k, v)
+			_, err := fmt.Fprintf(&buf, "\t%s: \t%v\n", k, v)
 			if err != nil {
 				return "", err
 			}
 		}
-	}
-	err := writer.Flush()
-	if err != nil {
-		return "", err
 	}
 	return buf.String(), nil
 }
@@ -199,21 +197,21 @@ func removeAboveEntrypoint(t Trace) []cleansedTraces {
 			parts := strings.Split(fun.Name(), "/")
 			funcName = parts[len(parts)-1]
 		}
-		//detect if we're in a test file before adding
+		// detect if we're in a test file before adding
 		if strings.Contains(t[i].File, "src/testing/testing.go") {
 			result = append(result, cleansedTraces{
 				msg: fmt.Sprintf("%v result(s) above entrypoint ignored.", len(t)-i-1),
 			})
-			//skip the rest
+			// skip the rest
 			i = len(t)
 			continue
 		}
-		//detect if we're at main, we won't need to print past that
+		// detect if we're at main, we won't need to print past that
 		if strings.Contains(funcName, "main.main") {
 			result = append(result, cleansedTraces{
 				msg: fmt.Sprintf("%v result(s) above entrypoint ignored.", len(t)-i-1),
 			})
-			//skip the rest
+			// skip the rest
 			i = len(t)
 			continue
 		}
