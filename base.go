@@ -16,29 +16,29 @@ type (
 )
 
 // Actual implementation
-type oopsError struct {
+type BaseOopsError struct {
 	actual error
 	msg    string
 	stack  Trace
 	meta   map[string]interface{}
 }
 
-func (o *oopsError) with(key string, value interface{}) {
+func (o *BaseOopsError) With(key string, value interface{}) {
 	if o.meta == nil {
 		o.meta = make(map[string]interface{})
 	}
 	o.meta[key] = value
 }
 
-func (o oopsError) Error() string {
+func (o BaseOopsError) Error() string {
 	return o.msg
 }
 
-func (o oopsError) Unwrap() error {
+func (o BaseOopsError) Unwrap() error {
 	return o.actual
 }
 
-func (o oopsError) inject(msg string, err error) oopsError {
+func (o BaseOopsError) Inject(msg string, err error) BaseOopsError {
 	// TODO: FRAMES may need to be changed, it may not go far enough back
 	FRAMES := 3
 	if len(strings.TrimSpace(msg)) > 0 {
@@ -69,7 +69,7 @@ func (o oopsError) inject(msg string, err error) oopsError {
 }
 
 // Formats
-func (o *oopsError) Format(s fmt.State, verb rune) {
+func (o *BaseOopsError) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		st, err := JSONFormat(o)
@@ -101,7 +101,7 @@ type cleansedTraces struct {
 	File string
 }
 
-func JSONFormat(e *oopsError) (string, error) {
+func JSONFormat(e *BaseOopsError) (string, error) {
 	type alias struct {
 		OriginalError string
 		Frames        []cleansedTraces
@@ -157,7 +157,7 @@ func removeAboveEntrypoint(t Trace) []cleansedTraces {
 }
 
 // TabFormat returns a tabular error format
-func TabFormat(e *oopsError) (string, error) {
+func TabFormat(e *BaseOopsError) (string, error) {
 	var buf bytes.Buffer
 	newline := "\n"
 	//LIFO

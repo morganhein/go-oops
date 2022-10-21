@@ -9,24 +9,20 @@ type Oops interface {
 }
 
 type Errors interface {
-	InternalError | UnknownError |
-		ValidationError | NotFoundError |
-		NotAuthorizedError | NotAuthenticatedError |
-		TryAgainLaterError | DeadlineExceededError
-	inject(msg string, err error) Oops
+	Inject(msg string, err error) Oops
 }
 
 // New creates a new error of the specified type and returns it
 func New[T Errors](format string, args ...interface{}) Oops {
 	x := *(new(T))
 	msg := fmt.Sprintf(format, args...)
-	x2 := x.inject(msg, nil)
+	x2 := x.Inject(msg, nil)
 	return x2
 }
 
 func Wrap[T Errors](err error, format string, args ...interface{}) Oops {
 	x := *(new(T))
 	msg := fmt.Sprintf(format, args...)
-	x2 := x.inject(msg, err)
+	x2 := x.Inject(msg, err)
 	return x2
 }
