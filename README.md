@@ -30,21 +30,67 @@ Furthermore, the error automatically records the stack.
 * DeadlineExceededError
 * UnknownError
 
+## Metadata
+You can attach k/v pairs of information when creating an Oops Error.
+```go
+err := oops.New[oops.InternalError]("errors can be cool too").
+	Wrap("key", interface{})
+```
+
+## Printing Verbs
+This library uses several non-standard string formatting verbs for various outputs.
+* `%v`: tabular, human readable format
+* `%V`: tabular, human readable format with metadata
+* `%s`: json, computer readable format
+* `%S`: json, computer readable format with metadata
+
 ### Type aliasing
 Use type aliasing if you want to rename error types:
 ```go
 type SlowDownMcSpeedyError = TryAgainLaterError
 ```
 
+### Unwrapping
+This library is fully compliant with `errors.As`:
+```go
+ err := New[InternalError]("errors are bad: %v", 2)
+ var i *InternalError
+ ok := errors.As(err, &i)
+ //ok is true, and you have access to the full InternalError
+```
 
+### Custom Types
+To create a custom error type, you must implement the following interfaces
+```go
+type OopsI interface {
+    With(key string, value interface{}) OopsI
+}
+
+type ErrorType interface {
+    Inject(msg string, err error) OopsI
+}
+```
+
+The implementations __must include__ the following logic at a minimum to work with Oops:
+```go
+type CustomError struct {
+	oops.BaseOopsError
+}
+
+func (c CustomError) Inject(msg string, err error) oops.OopsI {
+	c.BaseOopsError = c.BaseOopsError.Inject(msg, err)
+	return &c
+}
+
+func (c *CustomError) With(key string, value interface{}) oops.OopsI {
+	c.BaseOopsError.With(key, value)
+	return c
+}
+```
+ 
 ## TODO:
 1. Tests
    1. For `Wrap`
    2. Formatting tests that detect output
-2. Taskfile
-3. Pre-commit...or something
-4. Finish readme
+3. Finish readme
    1. Badges
-   2. Examples of how to extend Oops with custom type
-   3. Examples of metadata
-   4. Explanation of error printing flags
