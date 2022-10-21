@@ -148,10 +148,9 @@ func JSONFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 // TabFormat returns a tabular error format
 func TabFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 	var buf bytes.Buffer
-	newline := "\n"
 	//LIFO
 	if e.actual != nil {
-		_, err := fmt.Fprintf(&buf, "originalErr: %v%v", e.actual, newline)
+		_, err := fmt.Fprintf(&buf, "err: \t%v\n", e.actual)
 		if err != nil {
 			return "", err
 		}
