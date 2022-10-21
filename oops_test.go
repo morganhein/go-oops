@@ -2,53 +2,54 @@ package oops
 
 import (
 	"errors"
-	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-type newError struct {
-	msg string
+func TestNew(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2).
+		With("name", "morty").
+		With("language", "go")
+	assert.NotNil(t, err)
+	var i *InternalError
+	ok := errors.As(err, &i)
+	assert.True(t, ok)
+	assert.Equal(t, "errors are bad: 2", i.Error())
 }
 
-func (n newError) Error() string {
-	return n.msg
+func TestWrap(t *testing.T) {
+	innerError := errors.New("this is an inner error")
+	err := Wrap[InternalError](innerError, "this is the outer error")
+	assert.NotNil(t, err)
+	t.Logf("\n%s", err)
 }
 
-func TestErrorsIs(t *testing.T) {
-	sentinelErr := errors.New("this is a sentinenl error")
-	genError := Wrap(sentinelErr)
-	ok := errors.Is(genError, sentinelErr)
-	if !ok {
-		t.Fail()
-	}
+func TestAsError(t *testing.T) {
+	var err error
+	err = New[InternalError]("errors are bad: %v", 2)
+	assert.NotNil(t, err)
 }
 
-func TestErrorsAs(t *testing.T) {
-	originalErr := &newError{msg: "original error"}
-	genError := Wrap(originalErr)
-	var detectError *newError
-	ok := errors.As(genError, &detectError)
-	if !ok {
-		t.Fail()
-	}
+func TestJSonFormat(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2)
+	t.Logf("\n%v", err)
 }
 
-func TestWithMessage(t *testing.T) {
-	originalErr := &newError{msg: "original error"}
-	msgError := WithMessage("new message", originalErr)
-	trace := GetTrace(msgError)
-	if trace == nil {
-		t.Fail()
-	}
-	fmt.Printf("%s\n", trace)
+func TestJsonFormatWith(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2).
+		With("name", "morty").
+		With("language", "go")
+	t.Logf("\n%V", err)
 }
 
-func TestTrace(t *testing.T) {
-	err := New("this is a new error")
-	newErr := fmt.Errorf("here's a new error: %w", err)
-	eTrace := GetTrace(newErr)
-	if eTrace == nil {
-		t.Fail()
-	}
-	fmt.Printf("%s\n", eTrace)
+func TestTabFormat(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2)
+	t.Logf("\n%s", err)
+}
+
+func TestTabFormatWith(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2).
+		With("name", "morty").
+		With("language", "go")
+	t.Logf("\n%S", err)
 }
