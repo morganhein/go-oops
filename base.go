@@ -40,7 +40,6 @@ func (o BaseOopsError) Unwrap() error {
 }
 
 func (o BaseOopsError) Inject(msg string, err error) BaseOopsError {
-	// TODO: FRAMES may need to be changed, it may not go far enough back
 	FRAMES := 3
 	if len(strings.TrimSpace(msg)) > 0 {
 		o.msg = msg
@@ -56,11 +55,12 @@ func (o BaseOopsError) Inject(msg string, err error) BaseOopsError {
 	var s runtime.Frame
 	for keepGoing {
 		s, keepGoing = capturedFrames.Next()
-		// we don't want the stack trace to include anything from the protos folder on
-		if strings.Contains(s.File, "/protobuf/") || strings.HasSuffix(s.File, ".pb.go") {
+		// we don't want the stack trace to include anything in protobuf (so much noise)
+		if strings.HasSuffix(s.File, ".pb.go") {
 			keepGoing = false
 			continue
 		}
+		// or anything above a test
 		if strings.Contains(s.File, "_test.go") {
 			keepGoing = false
 		}
