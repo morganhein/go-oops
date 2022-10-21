@@ -9,10 +9,6 @@ func (i *InternalError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i InternalError) AsError() error {
-	return &i
-}
-
 func (i InternalError) Inject(msg string, err error) OopsI {
 	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
 	return &i
@@ -27,10 +23,6 @@ func (i *ValidationError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i ValidationError) AsError() error {
-	return &i
-}
-
 func (i ValidationError) Inject(msg string, err error) OopsI {
 	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
 	return &i
@@ -40,13 +32,9 @@ type NotFoundError struct {
 	BaseOopsError
 }
 
-func (n *NotFoundError) With(key string, value interface{}) OopsI {
-	n.BaseOopsError.With(key, value)
-	return n
-}
-
-func (n NotFoundError) AsError() error {
-	return &n
+func (i *NotFoundError) With(key string, value interface{}) OopsI {
+	i.BaseOopsError.With(key, value)
+	return i
 }
 
 func (n NotFoundError) Inject(msg string, err error) OopsI {
@@ -58,13 +46,9 @@ type NotAuthorizedError struct {
 	BaseOopsError
 }
 
-func (n *NotAuthorizedError) With(key string, value interface{}) OopsI {
-	n.BaseOopsError.With(key, value)
-	return n
-}
-
-func (n NotAuthorizedError) AsError() error {
-	return &n
+func (i *NotAuthorizedError) With(key string, value interface{}) OopsI {
+	i.BaseOopsError.With(key, value)
+	return i
 }
 
 func (n NotAuthorizedError) Inject(msg string, err error) OopsI {
@@ -81,10 +65,6 @@ func (i *TryAgainLaterError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i TryAgainLaterError) AsError() error {
-	return &i
-}
-
 func (i TryAgainLaterError) Inject(msg string, err error) OopsI {
 	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
 	return &i
@@ -97,10 +77,6 @@ type NotAuthenticatedError struct {
 func (i *NotAuthenticatedError) With(key string, value interface{}) OopsI {
 	i.BaseOopsError.With(key, value)
 	return i
-}
-
-func (i NotAuthenticatedError) AsError() error {
-	return &i
 }
 
 func (i NotAuthenticatedError) Inject(msg string, err error) OopsI {
@@ -117,10 +93,6 @@ func (i *DeadlineExceededError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i DeadlineExceededError) AsError() error {
-	return &i
-}
-
 func (i DeadlineExceededError) Inject(msg string, err error) OopsI {
 	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
 	return &i
@@ -133,10 +105,6 @@ type UnknownError struct {
 func (i *UnknownError) With(key string, value interface{}) OopsI {
 	i.BaseOopsError.With(key, value)
 	return i
-}
-
-func (i UnknownError) AsError() error {
-	return &i
 }
 
 func (i UnknownError) Inject(msg string, err error) OopsI {
