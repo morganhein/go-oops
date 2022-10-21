@@ -31,6 +31,14 @@ func (o *BaseOopsError) With(key string, value interface{}) {
 	o.meta[key] = value
 }
 
+func (o BaseOopsError) MarshalJSON() ([]byte, error) {
+	s, err := JSONFormat(&o, true)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(s), nil
+}
+
 func (o BaseOopsError) Error() string {
 	return o.msg
 }
@@ -124,13 +132,17 @@ type cleansedTraces struct {
 
 func JSONFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 	type alias struct {
-		OriginalError string
+		OriginalError string `json:"wrapped_error,omitempty"`
+		Msg           string `json:"error"`
 		Frames        []cleansedTraces
 		Meta          map[string]interface{} `json:",omitempty"`
 	}
 	cleansed := removeAboveEntrypoint(e.stack)
 	a := alias{
 		Frames: cleansed,
+	}
+	if e.msg != "" {
+		a.Msg = e.msg
 	}
 	if e.actual != nil {
 		a.OriginalError = e.actual.Error()
