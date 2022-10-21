@@ -1,0 +1,32 @@
+# EXAMPLE USAGE:
+#
+#   Refer for explanation to following link:
+#   https://github.com/evilmartians/lefthook/blob/master/docs/full_guide.md
+#
+# pre-push:
+#   commands:
+#     packages-audit:
+#       tags: frontend security
+#       run: yarn audit
+#     gems-audit:
+#       tags: backend security
+#       run: bundle audit
+#
+ pre-commit:
+   parallel: true
+   commands:
+     gofumpt:
+       glob: "*.{go}"
+       run: gofumpt -l -w {staged_files}
+     gotest:
+       glob: "*.{go}"
+       run: go test ./...
+     govet:
+       tags: backend style
+       glob: "*.go"
+       run: go vet {staged_files}
+#   scripts:
+#     "hello.js":
+#       runner: node
+#     "any.go":
+#       runner: go run
