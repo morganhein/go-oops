@@ -12,7 +12,7 @@ type oopsError struct {
 	stack  []Frame
 }
 
-func (o *oopsError) With(key string, value interface{}) Oops {
+func (o *oopsError) with(key string, value interface{}) {
 	panic("nothing")
 }
 
@@ -24,7 +24,7 @@ func (o oopsError) Unwrap() error {
 	return o.actual
 }
 
-func (o oopsError) Inject(msg string, err error) oopsError {
+func (o oopsError) inject(msg string, err error) oopsError {
 	// TODO: FRAMES may need to be changed, it may not go far enough back
 	FRAMES := 3
 	if len(strings.TrimSpace(msg)) > 0 {
