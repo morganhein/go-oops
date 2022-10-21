@@ -1,13 +1,5 @@
 package oops
 
-import (
-	"runtime"
-)
-
-type (
-	Frame runtime.Frame
-)
-
 type InternalError struct {
 	oopsError
 }
