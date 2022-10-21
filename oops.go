@@ -14,15 +14,15 @@ type ErrorType interface {
 
 // New creates a new error of the specified type and returns it
 func New[T ErrorType](format string, args ...interface{}) OopsI {
-	x := *(new(T))
+	newt := *(new(T))
 	msg := fmt.Sprintf(format, args...)
-	x2 := x.Inject(msg, nil)
-	return x2
+	e := newt.Inject(msg, nil)
+	return e
 }
 
 func Wrap[T ErrorType](err error, format string, args ...interface{}) OopsI {
-	x := *(new(T))
+	newt := *(new(T))
 	msg := fmt.Sprintf(format, args...)
-	x2 := x.Inject(msg, err)
-	return x2
+	e := newt.Inject(msg, err)
+	return e
 }
