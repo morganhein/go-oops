@@ -9,8 +9,8 @@ func (i *InternalError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i InternalError) Inject(msg string, err error) OopsI {
-	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
+func (i InternalError) Inject(msg, errType string, err error) OopsI {
+	i.BaseOopsError = i.BaseOopsError.Inject(msg, errType, err)
 	return &i
 }
 
@@ -23,8 +23,8 @@ func (i *ValidationError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i ValidationError) Inject(msg string, err error) OopsI {
-	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
+func (i ValidationError) Inject(msg, errType string, err error) OopsI {
+	i.BaseOopsError = i.BaseOopsError.Inject(msg, errType, err)
 	return &i
 }
 
@@ -37,8 +37,8 @@ func (i *NotFoundError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (n NotFoundError) Inject(msg string, err error) OopsI {
-	n.BaseOopsError = n.BaseOopsError.Inject(msg, err)
+func (n NotFoundError) Inject(msg, errType string, err error) OopsI {
+	n.BaseOopsError = n.BaseOopsError.Inject(msg, errType, err)
 	return &n
 }
 
@@ -51,8 +51,8 @@ func (i *NotAuthorizedError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (n NotAuthorizedError) Inject(msg string, err error) OopsI {
-	n.BaseOopsError = n.BaseOopsError.Inject(msg, err)
+func (n NotAuthorizedError) Inject(msg, errType string, err error) OopsI {
+	n.BaseOopsError = n.BaseOopsError.Inject(msg, errType, err)
 	return &n
 }
 
@@ -65,8 +65,8 @@ func (i *TryAgainLaterError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i TryAgainLaterError) Inject(msg string, err error) OopsI {
-	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
+func (i TryAgainLaterError) Inject(msg, errType string, err error) OopsI {
+	i.BaseOopsError = i.BaseOopsError.Inject(msg, errType, err)
 	return &i
 }
 
@@ -79,8 +79,8 @@ func (i *NotAuthenticatedError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i NotAuthenticatedError) Inject(msg string, err error) OopsI {
-	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
+func (i NotAuthenticatedError) Inject(msg, errType string, err error) OopsI {
+	i.BaseOopsError = i.BaseOopsError.Inject(msg, errType, err)
 	return &i
 }
 
@@ -93,8 +93,8 @@ func (i *DeadlineExceededError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i DeadlineExceededError) Inject(msg string, err error) OopsI {
-	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
+func (i DeadlineExceededError) Inject(msg, errType string, err error) OopsI {
+	i.BaseOopsError = i.BaseOopsError.Inject(msg, errType, err)
 	return &i
 }
 
@@ -107,7 +107,7 @@ func (i *UnknownError) With(key string, value interface{}) OopsI {
 	return i
 }
 
-func (i UnknownError) Inject(msg string, err error) OopsI {
-	i.BaseOopsError = i.BaseOopsError.Inject(msg, err)
+func (i UnknownError) Inject(msg, errType string, err error) OopsI {
+	i.BaseOopsError = i.BaseOopsError.Inject(msg, errType, err)
 	return &i
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"runtime"
 	"strings"
 	"text/tabwriter"
@@ -17,10 +18,11 @@ type (
 
 // Actual implementation
 type BaseOopsError struct {
-	actual error
-	msg    string
-	stack  Trace
-	meta   map[string]interface{}
+	actual  error                  // the wrapped error, if any
+	msg     string                 // the Oops error message
+	errType string                 // the Oops error type
+	stack   Trace                  // the stack trace
+	meta    map[string]interface{} // metadata attached to this error
 }
 
 // With attaches the value to the error under the specified key
@@ -47,7 +49,8 @@ func (o BaseOopsError) Unwrap() error {
 	return o.actual
 }
 
-func (o BaseOopsError) Inject(msg string, err error) BaseOopsError {
+func (o BaseOopsError) Inject(msg, errType string, err error) BaseOopsError {
+	o.errType = errType
 	FRAMES := 3
 	if len(strings.TrimSpace(msg)) > 0 {
 		o.msg = msg
@@ -198,6 +201,14 @@ func TabFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 		}
 	}
 	return buf.String(), nil
+}
+
+func getType(myvar interface{}) string {
+	if t := reflect.TypeOf(myvar); t.Kind() == reflect.Ptr {
+		return "*" + t.Elem().Name()
+	} else {
+		return t.Name()
+	}
 }
 
 func removeAboveEntrypoint(t Trace) []cleansedTraces {
