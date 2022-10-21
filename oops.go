@@ -5,7 +5,7 @@ import "fmt"
 type OopsI interface {
 	// With attaches any key/value pair to the error's metadata
 	With(key string, value interface{}) OopsI
-	error
+	AsError() error
 }
 
 type Injectable interface {
