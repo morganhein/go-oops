@@ -1,60 +1,32 @@
 package oops
 
-import (
-	"errors"
-	"fmt"
-)
+import "fmt"
 
 type Oops interface {
+	// With attaches any key/value pair to the error's metadata
+	With(key string, value interface{}) Oops
 	error
-	Trace() Trace
 }
 
-func New(msg string) error {
-	return &tracedError{
-		original: errors.New(msg),
-		trace:    addTrace(0),
-	}
+type Errors interface {
+	InternalError | UnknownError |
+		ValidationError | NotFoundError |
+		NotAuthorizedError | NotAuthenticatedError |
+		TryAgainLaterError | DeadlineExceededError
+	inject(msg string, err error) Oops
 }
 
-func Wrap(e error) error {
-	//check if it's already a traced error
-	return &tracedError{
-		original: e,
-		trace:    addTrace(0),
-	}
+// New creates a new error of the specified type and returns it
+func New[T Errors](format string, args ...interface{}) Oops {
+	x := *(new(T))
+	msg := fmt.Sprintf(format, args...)
+	x2 := x.inject(msg, nil)
+	return x2
 }
 
-func WithMessage(msg string, original error) error {
-	return &tracedError{
-		original: fmt.Errorf("%s: %w", msg, original),
-		trace:    addTrace(0),
-	}
-}
-
-// GetTrace finds the earliest/first error that contains a stack trace
-func GetTrace(e error) Oops {
-	//iterate through each value and find any that have traces
-	next := true
-	var foundTraceError *tracedError
-	foundTraceError, _ = e.(*tracedError)
-	for next {
-		unwrapped := errors.Unwrap(e)
-		//find the first one to get added
-		val, ok := e.(*tracedError)
-		if ok {
-			foundTraceError = val
-		}
-		if unwrapped == nil {
-			next = false
-			continue
-		}
-		e = unwrapped
-	}
-	//if we found a stack, return it
-	if foundTraceError != nil {
-		return foundTraceError
-	}
-	//if none found return nil
-	return nil
+func Wrap[T Errors](err error, format string, args ...interface{}) Oops {
+	x := *(new(T))
+	msg := fmt.Sprintf(format, args...)
+	x2 := x.inject(msg, err)
+	return x2
 }
