@@ -7,10 +7,36 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	err := New[InternalError]("errors are bad: %v", 2)
+	err := New[InternalError]("errors are bad: %v", 2).
+		With("name", "morty").
+		With("language", "go")
 	assert.NotNil(t, err)
 	var i *InternalError
 	ok := errors.As(err, &i)
 	assert.True(t, ok)
 	assert.Equal(t, "errors are bad: 2", i.Error())
+}
+
+func TestJSonFormat(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2)
+	t.Logf("\n%v", err)
+}
+
+func TestJsonFormatWith(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2).
+		With("name", "morty").
+		With("language", "go")
+	t.Logf("\n%V", err)
+}
+
+func TestTabFormat(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2)
+	t.Logf("\n%s", err)
+}
+
+func TestTabFormatWith(t *testing.T) {
+	err := New[InternalError]("errors are bad: %v", 2).
+		With("name", "morty").
+		With("language", "go")
+	t.Logf("\n%S", err)
 }

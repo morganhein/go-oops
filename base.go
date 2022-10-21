@@ -23,6 +23,7 @@ type BaseOopsError struct {
 	meta   map[string]interface{}
 }
 
+// With attaches the value to the error under the specified key
 func (o *BaseOopsError) With(key string, value interface{}) {
 	if o.meta == nil {
 		o.meta = make(map[string]interface{})
@@ -69,23 +70,43 @@ func (o BaseOopsError) Inject(msg string, err error) BaseOopsError {
 }
 
 // Formats
+
+// Format implements the fmt.Formatter interface: https://pkg.go.dev/fmt#Formatter
+// It implements the following verbs:
+// v: json format, without meta information
+// V: json format, with meta information
+// s: tab format, without meta information
+// S: tab format, with meta information
 func (o *BaseOopsError) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
-		st, err := JSONFormat(o)
+		st, err := JSONFormat(o, false)
+		if err != nil {
+			//TODO (@morgan): maybe better logging here?
+			fmt.Printf("could not convert error into the proper format: %v\n", err)
+		}
+		_, _ = io.WriteString(s, st)
+	case 'V':
+		st, err := JSONFormat(o, true)
 		if err != nil {
 			//TODO (@morgan): maybe better logging here?
 			fmt.Printf("could not convert error into the proper format: %v\n", err)
 		}
 		_, _ = io.WriteString(s, st)
 	case 's':
-		st, err := TabFormat(o)
+		st, err := TabFormat(o, false)
+		if err != nil {
+			fmt.Printf("could not convert error into the proper format: %v\n", err)
+		}
+		_, _ = io.WriteString(s, st)
+	case 'S':
+		st, err := TabFormat(o, true)
 		if err != nil {
 			fmt.Printf("could not convert error into the proper format: %v\n", err)
 		}
 		_, _ = io.WriteString(s, st)
 	default:
-		st, err := JSONFormat(o)
+		st, err := JSONFormat(o, false)
 		if err != nil {
 			//TODO (@morgan): maybe better logging here?
 			fmt.Printf("could not convert error into the proper format: %v\n", err)
@@ -101,10 +122,11 @@ type cleansedTraces struct {
 	File string
 }
 
-func JSONFormat(e *BaseOopsError) (string, error) {
+func JSONFormat(e *BaseOopsError, includeMeta bool) (string, error) {
 	type alias struct {
 		OriginalError string
 		Frames        []cleansedTraces
+		Meta          map[string]interface{} `json:",omitempty"`
 	}
 	cleansed := removeAboveEntrypoint(e.stack)
 	a := alias{
@@ -113,11 +135,60 @@ func JSONFormat(e *BaseOopsError) (string, error) {
 	if e.actual != nil {
 		a.OriginalError = e.actual.Error()
 	}
+	if includeMeta {
+		a.Meta = e.meta
+	}
 	b, err := json.Marshal(a)
 	if err != nil {
 		return "", err
 	}
 	return string(b), nil
+}
+
+// TabFormat returns a tabular error format
+func TabFormat(e *BaseOopsError, includeMeta bool) (string, error) {
+	var buf bytes.Buffer
+	newline := "\n"
+	//LIFO
+	if e.actual != nil {
+		_, err := fmt.Fprintf(&buf, "originalErr: %v%v", e.actual, newline)
+		if err != nil {
+			return "", err
+		}
+	}
+	traces := removeAboveEntrypoint(e.stack)
+	writer := tabwriter.NewWriter(&buf, 6, 4, 3, '\t', tabwriter.AlignRight)
+	for i := 0; i < len(traces); i++ {
+		if traces[i].msg != "" {
+			_, err := fmt.Fprintf(writer, " ?\t%v", traces[i].msg)
+			if err != nil {
+				return "", err
+			}
+			continue
+		}
+		_, err := fmt.Fprintf(writer, " %v.\t%s()\t%s:%d\t\n", i+1, traces[i].Func, traces[i].File, traces[i].Line)
+		if err != nil {
+			return "", err
+		}
+	}
+	if includeMeta && e.meta != nil && len(e.meta) > 0 {
+		_, err := fmt.Fprintf(writer, "Metadata:")
+		if err != nil {
+			return "", err
+		}
+
+		for k, v := range e.meta {
+			_, err = fmt.Fprintf(writer, "\t%s: \t%v\n", k, v)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+	err := writer.Flush()
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func removeAboveEntrypoint(t Trace) []cleansedTraces {
@@ -154,37 +225,4 @@ func removeAboveEntrypoint(t Trace) []cleansedTraces {
 		})
 	}
 	return result
-}
-
-// TabFormat returns a tabular error format
-func TabFormat(e *BaseOopsError) (string, error) {
-	var buf bytes.Buffer
-	newline := "\n"
-	//LIFO
-	if e.actual != nil {
-		_, err := fmt.Fprintf(&buf, "originalErr: %v%v", e.actual, newline)
-		if err != nil {
-			return "", err
-		}
-	}
-	traces := removeAboveEntrypoint(e.stack)
-	writer := tabwriter.NewWriter(&buf, 6, 4, 3, '\t', tabwriter.AlignRight)
-	for i := 0; i < len(traces); i++ {
-		if traces[i].msg != "" {
-			_, err := fmt.Fprintf(writer, " ?\t%v", traces[i].msg)
-			if err != nil {
-				return "", err
-			}
-			continue
-		}
-		_, err := fmt.Fprintf(writer, " %v.\t%s()\t%s:%d\t\n", i+1, traces[i].Func, traces[i].File, traces[i].Line)
-		if err != nil {
-			return "", err
-		}
-	}
-	err := writer.Flush()
-	if err != nil {
-		return "", err
-	}
-	return buf.String(), nil
 }
