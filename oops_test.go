@@ -29,6 +29,7 @@ func TestWrap(t *testing.T) {
 	assert.Equal(t, innerError.Error(), extractedErr.Error())
 }
 
+// TODO: this test could be better.... checking for the metadata seems an obvious choice
 func TestWithMetadata(t *testing.T) {
 	err := New[InternalError]("this error contains metadata").
 		With("count", 1)
@@ -49,6 +50,9 @@ func TestJSonFormat(t *testing.T) {
 	_, tErr := fmt.Fprintf(writer, "%v", err)
 	assert.NoError(t, tErr)
 	assert.Contains(t, writer.String(), errMsg)
+	var m map[string]interface{}
+	mErr := json.Unmarshal([]byte(writer.String()), &m)
+	assert.NoError(t, mErr)
 }
 
 func TestJsonFormatWith(t *testing.T) {
@@ -74,20 +78,49 @@ func TestJsonFormatWith(t *testing.T) {
 }
 
 func TestTabFormat(t *testing.T) {
-	err := New[InternalError]("errors are bad: %v", 2)
-	t.Logf("\n%s", err)
+	var err error
+	errMsg := fmt.Sprintf("errors are bad: %v", 2)
+	err = New[InternalError](errMsg)
+	writer := bytes.NewBuffer([]byte{})
+	_, tErr := fmt.Fprintf(writer, "%s", err)
+	assert.NoError(t, tErr)
+	assert.Contains(t, writer.String(), errMsg)
 }
 
 func TestTabFormatWith(t *testing.T) {
 	err := New[InternalError]("errors are bad: %v", 2).
 		With("name", "morty").
 		With("language", "go")
-	t.Logf("\n%S", err)
+	writer := bytes.NewBuffer([]byte{})
+	_, tErr := fmt.Fprintf(writer, "%S", err)
+	assert.NoError(t, tErr)
+	assert.Contains(t, writer.String(), "language")
+	assert.Contains(t, writer.String(), "go")
+	assert.Contains(t, writer.String(), "name")
+	assert.Contains(t, writer.String(), "morty")
 }
 
 func TestToJson(t *testing.T) {
-	err := New[InternalError]("errors are bad: %v", 2).
+	var err error
+	err = New[InternalError]("errors are bad: %v", 2).
 		With("name", "morty").
 		With("language", "go")
-	assert.Error(t, err)
+	d, err := json.Marshal(err)
+	assert.NoError(t, err)
+	var m map[string]interface{}
+	jErr := json.Unmarshal(d, &m)
+	assert.NoError(t, jErr)
+	ty, ok := m["Type"]
+	assert.True(t, ok)
+	assert.Equal(t, "InternalError", ty)
+	metai, ok := m["Meta"]
+	assert.True(t, ok)
+	assert.NotNil(t, metai)
+	meta, ok := metai.(map[string]interface{})
+	assert.True(t, ok)
+	assert.NotNil(t, meta)
+	assert.Contains(t, meta, "name")
+	assert.Contains(t, meta, "language")
+	assert.Equal(t, "morty", meta["name"])
+	assert.Equal(t, "go", meta["language"])
 }
