@@ -87,10 +87,3 @@ func (c *CustomError) With(key string, value interface{}) oops.OopsI {
 	return c
 }
 ```
- 
-## TODO:
-1. Tests
-   1. For `Wrap`
-   2. Formatting tests that detect output
-3. Finish readme
-   1. Badges
