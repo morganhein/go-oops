@@ -1,4 +1,4 @@
-![Tests](https://github.com/morganhein/go-oops/actions/workflows/push.yml/badge.svg)
+![Tests](https://github.com/morganhein/go-oops/actions/workflows/push.yml/badge.svg) [![Go Reference](https://pkg.go.dev/badge/github.com/morganhein/go-oops.svg)](https://pkg.go.dev/github.com/morganhein/go-oops)
 
 # OOPS
 
