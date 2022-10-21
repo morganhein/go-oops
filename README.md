@@ -31,7 +31,7 @@ Furthermore, the error automatically records the stack.
 * UnknownError
 
 ### Type aliasing
-Type aliasing if you want to rename error types using
+Use type aliasing if you want to rename error types:
 ```go
 type SlowDownMcSpeedyError = TryAgainLaterError
 ```
