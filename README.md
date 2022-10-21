@@ -35,3 +35,16 @@ Use type aliasing if you want to rename error types:
 ```go
 type SlowDownMcSpeedyError = TryAgainLaterError
 ```
+
+
+## TODO:
+1. Tests
+   1. For `Wrap`
+   2. Formatting tests that detect output
+2. Taskfile
+3. Pre-commit...or something
+4. Finish readme
+   1. Badges
+   2. Examples of how to extend Oops with custom type
+   3. Examples of metadata
+   4. Explanation of error printing flags
