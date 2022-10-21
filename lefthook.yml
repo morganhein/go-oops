@@ -24,7 +24,7 @@
      govet:
        tags: backend style
        glob: "*.go"
-       run: go vet {staged_files}
+       run: go vet ./...
 #   scripts:
 #     "hello.js":
 #       runner: node
