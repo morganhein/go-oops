@@ -22,7 +22,7 @@ func main() {
 	fmt.Printf("saw error: %v\n", i)
 
 	// a custom error type
-	err = oops.New[CustomError]("custom errors are not great either").
+	err = oops.New[CustomError]("custom errors are awesome though!").
 		With("name", "Morgan")
 	if err == nil {
 		panic("expected an error, but got nil")
@@ -39,8 +39,8 @@ type CustomError struct {
 	oops.BaseOopsError
 }
 
-func (c CustomError) Inject(msg string, err error) oops.OopsI {
-	c.BaseOopsError = c.BaseOopsError.Inject(msg, err)
+func (c CustomError) Inject(msg, errType string, err error) oops.OopsI {
+	c.BaseOopsError = c.BaseOopsError.Inject(msg, errType, err)
 	return &c
 }
 
