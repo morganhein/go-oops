@@ -39,12 +39,12 @@ type CustomError struct {
 	oops.BaseOopsError
 }
 
-func (c CustomError) Inject(msg string, err error) oops.Oops {
+func (c CustomError) Inject(msg string, err error) oops.OopsI {
 	c.BaseOopsError = c.BaseOopsError.Inject(msg, err)
 	return &c
 }
 
-func (c *CustomError) With(key string, value interface{}) oops.Oops {
+func (c *CustomError) With(key string, value interface{}) oops.OopsI {
 	c.BaseOopsError.With(key, value)
 	return c
 }
