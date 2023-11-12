@@ -1,34 +1,114 @@
 package oops
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
-type OopsI interface {
-	// With attaches any key/value pair to the error's metadata
-	With(key string, value interface{}) OopsI
-	error
+type Error interface {
+	InternalError | InputError | NotFoundError | NotAuthorizedError | NotAuthenticatedError | AlreadyExistsError
+	OopsError
 }
 
-type ErrorType interface {
-	// Inject is used to fill out a BaseError for any new OopsError
-	// msg: error message for the new error
-	// errType: the stringified name of the new error
-	// err: the original error to wrap, if any
-	Inject(msg, errType string, err error) OopsI
+type OopsError interface {
+	Inject(msg string, err error) error
 }
 
 // New creates a new error of the specified type and returns it
-func New[T ErrorType](format string, args ...interface{}) OopsI {
-	newt := *(new(T))
-	t := getType(newt)
-	msg := fmt.Sprintf(format, args...)
-	e := newt.Inject(msg, t, nil)
-	return e
+func New[T Error](format string, values ...interface{}) error {
+	x := *(new(T))
+	var x2 error
+	if len(values) == 0 {
+		x2 = x.Inject(format, nil)
+	}
+	if len(values) > 0 {
+		x2 = x.Inject(fmt.Sprintf(format, values...), nil)
+	}
+	return x2
 }
 
-func Wrap[T ErrorType](err error, format string, args ...interface{}) OopsI {
-	newt := *(new(T))
-	t := getType(newt)
-	msg := fmt.Sprintf(format, args...)
-	e := newt.Inject(msg, t, err)
-	return e
+func NewInternalError(format string, values ...interface{}) error {
+	return New[InternalError](format, values...)
+}
+
+// Wrap creates a new error with the passed in error wrapped. If err is nil, this returns nil.
+// When we wrap, detect if it's already an oops error, and if so, just augment it
+func Wrap[T Error](err error, format string, values ...any) error {
+	if err == nil {
+		return nil
+	}
+	x := *(new(T))
+	var x2 error
+	if len(values) == 0 {
+		x2 = x.Inject(format, err)
+	}
+	if len(values) > 0 {
+		x2 = x.Inject(fmt.Sprintf(format, values...), err)
+	}
+	return x2
+}
+
+func WrapInternalError(err error, format string, values ...interface{}) error {
+	if err == nil {
+		return nil
+	}
+	x := InternalError{}
+	var x2 error
+	if len(values) == 0 {
+		x2 = x.Inject(format, err)
+	}
+	if len(values) > 0 {
+		x2 = x.Inject(fmt.Sprintf(format, values...), err)
+	}
+	return x2
+}
+
+func Is(err error) (OopsError, bool) {
+	var internalError *InternalError
+	var inputError *InputError
+	var notFoundError *NotFoundError
+	var notAuthorizedError *NotAuthorizedError
+	var notAuthenticatedError *NotAuthenticatedError
+	var alreadyExistsError *AlreadyExistsError
+	switch {
+	case errors.As(err, &internalError):
+		return internalError, true
+	case errors.As(err, &inputError):
+		return inputError, true
+	case errors.As(err, &notFoundError):
+		return notFoundError, true
+	case errors.As(err, &notAuthorizedError):
+		return notAuthorizedError, true
+	case errors.As(err, &notAuthenticatedError):
+		return notAuthenticatedError, true
+	case errors.As(err, &alreadyExistsError):
+		return alreadyExistsError, true
+	}
+
+	return nil, false
+}
+
+func getStack(err error) []Frame {
+	var internalError *InternalError
+	var inputError *InputError
+	var notFoundError *NotFoundError
+	var notAuthorizedError *NotAuthorizedError
+	var notAuthenticatedError *NotAuthenticatedError
+	var alreadyExistsError *AlreadyExistsError
+	switch {
+	case errors.As(err, &internalError):
+		return internalError.Stack
+	case errors.As(err, &inputError):
+		return inputError.Stack
+	case errors.As(err, &notFoundError):
+		return notFoundError.Stack
+	case errors.As(err, &notAuthorizedError):
+		return notAuthorizedError.Stack
+	case errors.As(err, &notAuthenticatedError):
+		return notAuthenticatedError.Stack
+	case errors.As(err, &alreadyExistsError):
+		return alreadyExistsError.Stack
+	}
+
+	return nil
 }

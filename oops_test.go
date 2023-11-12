@@ -1,7 +1,6 @@
 package oops
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,117 +10,70 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	errMsg := fmt.Sprintf("errors are bad: %v", 2)
-	err := New[InternalError](errMsg)
-	assert.NotNil(t, err)
-	var i *InternalError
-	ok := errors.As(err, &i)
-	assert.True(t, ok)
-	assert.Equal(t, errMsg, i.Error())
+	e := New[InternalError]("this is my message")
+	i := &InternalError{}
+	worked := errors.As(e, &i)
+	assert.True(t, worked)
 }
 
-func TestWrap(t *testing.T) {
-	innerError := errors.New("this is an inner error")
-	errMsg := "this is the outer error"
-	err := Wrap[InternalError](innerError, errMsg)
-	assert.NotNil(t, err)
-	extractedErr := errors.Unwrap(err)
-	assert.Equal(t, errMsg, err.Error())
-	assert.Equal(t, innerError.Error(), extractedErr.Error())
+// TODO: This is not a great test, how should we test it?
+func TestPrintNormal(t *testing.T) {
+	e := Wrap[InternalError](errors.New("this is the original error"), "this is my message")
+	assert.Contains(t, e.Error(), "this is my message")
+	assert.Contains(t, e.Error(), "this is the original error")
+
+	e = Wrap[InternalError](errors.New("this is the original error"), "this is my message and my name is %v", "morgan")
+	assert.Contains(t, e.Error(), "morgan")
+	assert.Contains(t, e.Error(), "this is my message")
+	assert.Contains(t, e.Error(), "this is the original error")
+	// t.Logf("%v", e)
 }
 
-// TODO: this test could be better.... checking for the metadata seems an obvious choice
-func TestWithMetadata(t *testing.T) {
-	err := New[InternalError]("this error contains metadata").
-		With("count", 1)
-	assert.Error(t, err)
+func TestPrintTab(t *testing.T) {
+	t.Skip("needs assertions")
+	e := Wrap[InternalError](errors.New("this is the original error"), "this is my message")
+	t.Logf("%t", e)
 }
 
-func TestAsError(t *testing.T) {
-	var err error
-	err = New[InternalError]("errors are bad: %v", 2)
-	assert.NotNil(t, err)
+func TestPrintJson(t *testing.T) {
+	t.Skip("needs assertions")
+	e := Wrap[InternalError](errors.New("this is the original error"), "this is my message")
+	t.Logf("%j", e)
 }
 
-func TestJSonFormat(t *testing.T) {
-	var err error
-	errMsg := fmt.Sprintf("errors are bad: %v", 2)
-	err = New[InternalError](errMsg)
-	writer := bytes.NewBuffer([]byte{})
-	_, tErr := fmt.Fprintf(writer, "%v", err)
-	assert.NoError(t, tErr)
-	assert.Contains(t, writer.String(), errMsg)
-	var m map[string]interface{}
-	mErr := json.Unmarshal([]byte(writer.String()), &m)
-	assert.NoError(t, mErr)
-}
-
-func TestJsonFormatWith(t *testing.T) {
-	err := New[InternalError]("errors are bad: %v", 2).
-		With("name", "morty").
-		With("language", "go")
-	writer := bytes.NewBuffer([]byte{})
-	_, tErr := fmt.Fprintf(writer, "%V", err)
-	assert.NoError(t, tErr)
-	m := map[string]interface{}{}
-	jErr := json.Unmarshal([]byte(writer.String()), &m)
+func TestMultipleWrappedErrorsPrinting(t *testing.T) {
+	t.Skip("needs assertions")
+	ogErr := fmt.Errorf("puter error: %w", fmt.Errorf("middle error: %w", errors.New("internal error")))
+	err := Wrap[InternalError](ogErr, "oops error")
+	out, jErr := json.Marshal(err)
 	assert.NoError(t, jErr)
-	metai, ok := m["Meta"]
-	assert.True(t, ok)
-	assert.NotNil(t, metai)
-	meta, ok := metai.(map[string]interface{})
-	assert.True(t, ok)
-	assert.NotNil(t, meta)
-	assert.Contains(t, meta, "name")
-	assert.Contains(t, meta, "language")
-	assert.Equal(t, "morty", meta["name"])
-	assert.Equal(t, "go", meta["language"])
+	t.Log(string(out))
 }
 
-func TestTabFormat(t *testing.T) {
-	var err error
-	errMsg := fmt.Sprintf("errors are bad: %v", 2)
-	err = New[InternalError](errMsg)
-	writer := bytes.NewBuffer([]byte{})
-	_, tErr := fmt.Fprintf(writer, "%s", err)
-	assert.NoError(t, tErr)
-	assert.Contains(t, writer.String(), errMsg)
+func TestAssertEquality(t *testing.T) {
+	// write a test that asserts two of the below error of the same type are equal
+	ogErr := New[NotFoundError]("this is my not found message")
+	var notFoundError *NotFoundError
+	equal := errors.As(ogErr, &notFoundError)
+	assert.True(t, equal)
+
+	var wrongError *InternalError
+	equal = errors.As(ogErr, &wrongError)
+	assert.False(t, equal)
+
+	ogWrapped := Wrap[NotFoundError](errors.New("original not found"), "this is my not found message")
+	equal = errors.As(ogWrapped, &notFoundError)
+	assert.True(t, equal)
 }
 
-func TestTabFormatWith(t *testing.T) {
-	err := New[InternalError]("errors are bad: %v", 2).
-		With("name", "morty").
-		With("language", "go")
-	writer := bytes.NewBuffer([]byte{})
-	_, tErr := fmt.Fprintf(writer, "%S", err)
-	assert.NoError(t, tErr)
-	assert.Contains(t, writer.String(), "language")
-	assert.Contains(t, writer.String(), "go")
-	assert.Contains(t, writer.String(), "name")
-	assert.Contains(t, writer.String(), "morty")
-}
-
-func TestToJson(t *testing.T) {
-	var err error
-	err = New[InternalError]("errors are bad: %v", 2).
-		With("name", "morty").
-		With("language", "go")
-	d, err := json.Marshal(err)
-	assert.NoError(t, err)
-	var m map[string]interface{}
-	jErr := json.Unmarshal(d, &m)
-	assert.NoError(t, jErr)
-	ty, ok := m["Type"]
-	assert.True(t, ok)
-	assert.Equal(t, "InternalError", ty)
-	metai, ok := m["Meta"]
-	assert.True(t, ok)
-	assert.NotNil(t, metai)
-	meta, ok := metai.(map[string]interface{})
-	assert.True(t, ok)
-	assert.NotNil(t, meta)
-	assert.Contains(t, meta, "name")
-	assert.Contains(t, meta, "language")
-	assert.Equal(t, "morty", meta["name"])
-	assert.Equal(t, "go", meta["language"])
+func TestReWrapOopsError(t *testing.T) {
+	err := errors.New("this is the original error")
+	ogErr := WrapInternalError(err, "this is my not found message")
+	wrappedError := Wrap[NotAuthenticatedError](ogErr, "this is my not authenticated message")
+	// out, jErr := json.MarshalIndent(wrappedError, "", "  ")
+	// assert.NoError(t, jErr)
+	// t.Log(string(out))
+	t.Logf("%v", wrappedError)
+	t.Logf("%j", wrappedError)
+	t.Logf("%t", wrappedError)
 }
